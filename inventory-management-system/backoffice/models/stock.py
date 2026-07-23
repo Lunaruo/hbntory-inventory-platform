@@ -24,7 +24,7 @@ class Stock(Base):
     )
 
     product_id = Column(
-        Integer,
+        String,
         nullable=False,
     )
 
