@@ -8,7 +8,6 @@ from pydantic import BaseModel
 import sys
 import os
 
-# Allows importing product_tools.py from the MCP server folder
 sys.path.append(
     os.path.join(os.path.dirname(__file__), "..", "product_mcp_server")
 )
@@ -21,7 +20,6 @@ class Question(BaseModel):
     question: str
 
 
-# Temporary fake stock data (until Léo's real database is ready)
 FAKE_STOCK = {
     "HB-LAP-1001": [
         {"branch": "Lille", "quantity": 5},
@@ -45,6 +43,18 @@ def ask(payload: Question):
             product_code = word
             break
 
+    # NEW: "list all products" question — no product code needed
+    if not product_code and ("quels produits" in question or "liste des produits" in question or "produits disponibles" in question):
+        result = list_products()
+        if result["success"]:
+            names = ", ".join(p["name"] for p in result["products"][:10])
+            return {
+                "success": True,
+                "answer": f"Voici quelques produits disponibles : {names}.",
+            }
+        else:
+            return {"success": False, "answer": "Impossible de récupérer la liste des produits."}
+
     if not product_code:
         return {
             "success": False,
@@ -59,7 +69,6 @@ def ask(payload: Question):
                 "success": False,
                 "answer": f"Aucune information de stock pour {product_code}.",
             }
-
         details = ", ".join(f"{s['branch']} ({s['quantity']} unités)" for s in stock)
         return {
             "success": True,
