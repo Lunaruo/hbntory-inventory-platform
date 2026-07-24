@@ -1,4 +1,4 @@
-# 💬 Client Web Interface — HBntory
+#  Client Web Interface — HBntory
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-active-brightgreen" alt="status">
@@ -15,7 +15,7 @@
 
 ---
 
-## 📖 Table of contents
+##  Table of contents
 
 - [What this is](#-what-this-is)
 - [How it works](#-how-it-works)
@@ -26,7 +26,7 @@
 
 ---
 
-## 🎯 What this is
+##  What this is
 
 A single self-contained HTML page (`index.html`, no build step, no framework) providing a chat-style interface. Visitors type a question, the page sends it to the **AI Query Service**, and displays the answer — with a typing indicator while waiting and a clear error message if the service is unreachable.
 
@@ -41,7 +41,7 @@ A single self-contained HTML page (`index.html`, no build step, no framework) pr
 
 ---
 
-## 🔄 How it works
+##  How it works
 
 ```mermaid
 sequenceDiagram
@@ -61,7 +61,7 @@ The page communicates with the AI Query Service over **REST** (see [`ai_service/
 
 ---
 
-## 🚀 Getting started
+##  Getting started
 
 ### 1. Make sure the AI Query Service is running
 ```bash
@@ -80,7 +80,7 @@ No server, no build tools, no dependencies — it's a single static file.
 
 ---
 
-## 💬 Example questions
+##  Example questions
 
 Try these directly in the chat, or click the suggestion chips:
 
@@ -90,7 +90,7 @@ Try these directly in the chat, or click the suggestion chips:
 
 ---
 
-## 🎨 Design decisions
+##  Design decisions
 
 <details>
 <summary><b>Why a single static HTML file, no framework</b></summary>
@@ -115,7 +115,7 @@ Try these directly in the chat, or click the suggestion chips:
 
 ---
 
-## 📁 File structure
+##  File structure
 
 client_web/
 └── index.html # everything: markup, styles, and JS in one file

@@ -1,4 +1,4 @@
-# 🤖 AI Query Service — HBntory
+#  AI Query Service — HBntory
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-active-brightgreen" alt="status">
@@ -15,7 +15,7 @@
 
 ---
 
-## 📖 Table of contents
+##  Table of contents
 
 - [What this service does](#-what-this-service-does)
 - [Architecture](#-architecture)
@@ -28,7 +28,7 @@
 
 ---
 
-## 🎯 What this service does
+##  What this service does
 
 This service is the "brain" of HBntory's public assistant. It sits between the **Client Web Interface** and two data sources — the **Product MCP Server** and the **Backoffice stock data** — and turns a plain-English question into a clear, honest answer.
 
@@ -41,7 +41,7 @@ This service is the "brain" of HBntory's public assistant. It sits between the *
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```mermaid
 flowchart LR
@@ -61,7 +61,7 @@ This service is **intentionally independent** from the Backoffice, as required b
 
 ---
 
-## 🔄 Request flow
+##  Request flow
 
 ```mermaid
 sequenceDiagram
@@ -84,7 +84,7 @@ sequenceDiagram
 
 ---
 
-## 🧠 Technical decisions & justifications
+##  Technical decisions & justifications
 
 <details>
 <summary><b>1. Why REST instead of WebSockets</b></summary>
@@ -143,7 +143,7 @@ The current implementation looks for a product code pattern (`HB-...`) and keywo
 
 ---
 
-## 💬 Supported questions
+##  Supported questions
 
 | Type | Example | Status |
 |---|---|---|
@@ -154,7 +154,7 @@ The current implementation looks for a product code pattern (`HB-...`) and keywo
 
 ---
 
-## 🚀 Getting started
+##  Getting started
 
 ### 1. Install dependencies
 ```bash
@@ -175,7 +175,7 @@ uvicorn main:app --reload --port 8000
 
 ---
 
-## 📡 API reference
+##  API reference
 
 ### `POST /ask`
 
@@ -205,7 +205,7 @@ CORS is enabled (`allow_origins=["*"]`) so the Client Web Interface — opened a
 
 ---
 
-## ⚠️ Current limitations
+##  Current limitations
 
 | Limitation | Plan |
 |---|---|
