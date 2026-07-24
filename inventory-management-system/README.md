@@ -1,4 +1,4 @@
-# 🏬 HBntory — Inventory Management Platform
+#  HBntory — Inventory Management Platform
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-in%20progress-blue" alt="status">
@@ -17,7 +17,7 @@
 
 ---
 
-## 📐 Architecture overview
+##  Architecture overview
 
 ```mermaid
 flowchart TB
@@ -57,7 +57,7 @@ flowchart TB
 
 ---
 
-## 🧩 Components
+##  Components
 
 | Component | Owner | Responsibility |
 |---|---|---|
@@ -70,7 +70,7 @@ flowchart TB
 
 ---
 
-## 🔄 Request flow example
+##  Request flow example
 
 ```mermaid
 sequenceDiagram
@@ -92,7 +92,7 @@ sequenceDiagram
 
 ---
 
-## 🛠️ Tech stack
+##  Tech stack
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=python,fastapi,sqlite,docker,html,css,js,git,github" />
@@ -106,7 +106,7 @@ sequenceDiagram
 
 ---
 
-## 🚀 Getting started
+##  Getting started
 
 ### 1. Clone the repository
 ```bash
@@ -146,7 +146,7 @@ See [`backoffice/README.md`](inventory-management-system/backoffice/README.md) f
 
 ---
 
-## 📋 Project structure
+##  Project structure
 
 inventory-management-system/
 ├── backoffice/ # Internal app — auth, users, stock (Léo)
@@ -159,7 +159,7 @@ inventory-management-system/
 
 ---
 
-## 📖 Documentation
+##  Documentation
 
 - [AI Query Service — architecture & technical decisions](inventory-management-system/ai_service/README.md)
 - [Product MCP Server](inventory-management-system/product_mcp_server/README.md)
@@ -168,7 +168,7 @@ inventory-management-system/
 
 ---
 
-## 👥 Team
+##  Team
 
 | | |
 |---|---|
