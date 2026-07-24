@@ -3,6 +3,7 @@
 from sqlalchemy import (
     Column,
     Integer,
+    String,
     ForeignKey,
     DateTime,
 )
@@ -24,7 +25,7 @@ class Stock(Base):
     )
 
     product_id = Column(
-        String,
+        String(100),
         nullable=False,
     )
 
