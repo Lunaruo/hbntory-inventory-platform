@@ -66,7 +66,7 @@ flowchart TB
 | **External Product API** | Provided by school | Read-only product catalog (Docker container) |
 | **Product MCP Server** | Ouarda | Bridges the AI agent to the external Product API |
 | **AI Query Service** | Ouarda | Independent backend answering natural-language questions |
-| **Client Web Interface** | Ouarda | Public chat page, no authentication required |
+| **Client Web Interface** | Ouarda/Léo | Public chat page, no authentication required |
 
 ---
 
