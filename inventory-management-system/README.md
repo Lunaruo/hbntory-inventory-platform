@@ -172,7 +172,7 @@ inventory-management-system/
 
 | | |
 |---|---|
-| **Léo Lebtahi** | Backoffice — database, authentication, stock management |
+| **Léo Lebtahi** | Backoffice — database, authentication, stock management, Client Web Interface |
 | **Ouarda Bouchema** | AI/MCP layer — Product MCP Server, AI Query Service, Client Web Interface |
 
 ---
