@@ -45,13 +45,31 @@ def ask(payload: Question):
     question = payload.question.lower()
     words = payload.question.upper().split()
 
-    product_code = None
-    for word in words:
-        if word.startswith("HB-"):
-            product_code = word
-            break
+    # Collect ALL product codes mentioned (not just the first)
+    product_codes = [w for w in words if w.startswith("HB-")]
 
-    # NEW: "list all products" question — no product code needed
+    # NEW: shopping list — several products mentioned at once
+    if len(product_codes) > 1:
+        results = []
+        for code in product_codes:
+            stock = FAKE_STOCK.get(code)
+            if not stock:
+                results.append(f"{code} : information de stock introuvable")
+                continue
+            total = sum(s["quantity"] for s in stock)
+            if total > 0:
+                details = ", ".join(f"{s['branch']} ({s['quantity']} unités)" for s in stock)
+                results.append(f"{code} : disponible — {details}")
+            else:
+                results.append(f"{code} : rupture de stock partout")
+        return {
+            "success": True,
+            "answer": "Voici la disponibilité de votre liste d'achats :\n" + "\n".join(results),
+        }
+
+    product_code = product_codes[0] if product_codes else None
+
+    # "list all products" question — no product code needed
     if not product_code and ("quels produits" in question or "liste des produits" in question or "produits disponibles" in question):
         result = list_products()
         if result["success"]:
