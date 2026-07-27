@@ -4,6 +4,7 @@ Receives natural language questions and answers using the Product MCP tools.
 """
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sys
 import os
@@ -11,11 +12,17 @@ import os
 sys.path.append(
     os.path.join(os.path.dirname(__file__), "..", "product_mcp_server")
 )
+sys.path.append(
+    os.path.join(os.path.dirname(__file__), "..")
+)
 from product_tools import list_products, get_product_details
 
-app = FastAPI()
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from backoffice.models.stock import Stock
+from backoffice.models.branch import Branch
 
-from fastapi.middleware.cors import CORSMiddleware
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,20 +31,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class Question(BaseModel):
     question: str
 
 
-FAKE_STOCK = {
-    "HB-LAP-1001": [
-        {"branch": "Lille", "quantity": 5},
-        {"branch": "Paris", "quantity": 2},
-    ],
-    "HB-MON-2102": [
-        {"branch": "Lille", "quantity": 0},
-        {"branch": "Paris", "quantity": 8},
-    ],
-}
+BACKOFFICE_DB_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "inventory.db"
+)
+engine = create_engine(f"sqlite:///{BACKOFFICE_DB_PATH}")
+SessionLocal = sessionmaker(bind=engine)
+
+
+def get_stock_for_product(product_id: str) -> list:
+    """Read-only query: stock entries for a product across all branches."""
+    session = SessionLocal()
+    try:
+        results = (
+            session.query(Stock, Branch)
+            .join(Branch, Stock.branch_id == Branch.id)
+            .filter(Stock.product_id == product_id)
+            .all()
+        )
+        return [
+            {"branch": branch.name, "quantity": stock.quantity}
+            for stock, branch in results
+        ]
+    finally:
+        session.close()
 
 
 @app.post("/ask")
@@ -45,14 +66,13 @@ def ask(payload: Question):
     question = payload.question.lower()
     words = payload.question.upper().split()
 
-    # Collect ALL product codes mentioned (not just the first)
     product_codes = [w for w in words if w.startswith("HB-")]
 
-    # NEW: shopping list — several products mentioned at once
+    # Shopping list — several products mentioned at once
     if len(product_codes) > 1:
         results = []
         for code in product_codes:
-            stock = FAKE_STOCK.get(code)
+            stock = get_stock_for_product(code)
             if not stock:
                 results.append(f"{code} : information de stock introuvable")
                 continue
@@ -89,7 +109,7 @@ def ask(payload: Question):
 
     # Stock question
     if "stock" in question or "où" in question or "trouver" in question or "disponible" in question:
-        stock = FAKE_STOCK.get(product_code)
+        stock = get_stock_for_product(product_code)
         if not stock:
             return {
                 "success": False,
