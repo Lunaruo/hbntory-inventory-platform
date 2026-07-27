@@ -125,15 +125,15 @@ Not required for the MVP — implemented only after all mandatory functionality 
 
 | Feature | Priority |
 |---|---|
-| Multiple specialized AI agents | Nice to have |
-| Conversation history | Nice to have |
-| Response streaming (WebSockets) | Nice to have |
-| Dockerized deployment of all services | Nice to have |
-| Dashboard with stock statistics | Nice to have |
-| Search history | Nice to have |
-| Logging and monitoring | Nice to have |
-| Automated tests | Nice to have |
-| Advanced AI reasoning for multi-product recommendations | Nice to have |
+| Multiple specialized AI agents | Optional |
+| Conversation history | Optional |
+| Response streaming (WebSockets) | Optional |
+| Dockerized deployment of all services | Optional |
+| Dashboard with stock statistics | Optional |
+| Search history | Optional |
+| Logging and monitoring | Optional |
+| Automated tests | Optional |
+| Advanced AI reasoning for multi-product recommendations | Optional |
 
 ---
 
