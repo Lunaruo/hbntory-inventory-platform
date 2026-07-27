@@ -1,4 +1,4 @@
-#  AI Query Service — HBntory
+# AI Query Service — HBntory
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-active-brightgreen" alt="status">
@@ -15,40 +15,40 @@
 
 ---
 
-##  Table of contents
+## Table of contents
 
-- [What this service does](#-what-this-service-does)
-- [Architecture](#-architecture)
-- [Request flow](#-request-flow)
-- [Technical decisions & justifications](#-technical-decisions--justifications)
-- [Supported questions](#-supported-questions)
-- [Getting started](#-getting-started)
-- [API reference](#-api-reference)
-- [Current limitations](#-current-limitations)
+- [What this service does](#what-this-service-does)
+- [Architecture](#architecture)
+- [Request flow](#request-flow)
+- [Technical decisions & justifications](#technical-decisions--justifications)
+- [Supported questions](#supported-questions)
+- [Getting started](#getting-started)
+- [API reference](#api-reference)
+- [Current limitations](#current-limitations)
 
 ---
 
-##  What this service does
+## What this service does
 
-This service is the "brain" of HBntory's public assistant. It sits between the **Client Web Interface** and two data sources — the **Product MCP Server** and the **Backoffice stock data** — and turns a plain-English question into a clear, honest answer.
+This service is the "brain" of HBntory's public assistant. It sits between the **Client Web Interface** and two data sources — the **Product MCP Server** and the **Backoffice database** — and turns a plain-English question into a clear, honest answer.
 
 | It does | It does NOT |
 |---|---|
-| ✅ Answer using real product data via MCP | ❌ Invent product names, prices, or stock |
-| ✅ Clearly say when it doesn't know | ❌ Guess or hallucinate an answer |
-| ✅ Stay independent from the Backoffice | ❌ Share a database connection with it |
-| ✅ Expose a single, simple REST endpoint | ❌ Require a persistent connection |
+| Answer using real product data via MCP | Invent product names, prices, or stock |
+| Clearly say when it doesn't know | Guess or hallucinate an answer |
+| Stay independent from the Backoffice codebase | Share application logic with it |
+| Expose a single, simple REST endpoint | Require a persistent connection |
 
 ---
 
-##  Architecture
+## Architecture
 
 ```mermaid
 flowchart LR
-    Client["🌐 Client Web<br/>Interface"] -->|"POST /ask"| Service["🤖 AI Query<br/>Service"]
-    Service -->|"MCP tools"| MCP["🔌 Product MCP<br/>Server"]
-    MCP -->|"HTTP"| API["☁️ External<br/>Product API"]
-    Service -.->|"reads (soon)"| DB[("🗄️ Stock data<br/>Backoffice DB")]
+    Client["Client Web<br/>Interface"] -->|"POST /ask"| Service["AI Query<br/>Service"]
+    Service -->|"MCP tools"| MCP["Product MCP<br/>Server"]
+    MCP -->|"HTTP"| API["External<br/>Product API"]
+    Service -->|"reads"| DB[("Stock data<br/>Backoffice DB")]
 
     style Client fill:#F3217C,color:#fff,stroke:#333
     style Service fill:#7B2FF7,color:#fff,stroke:#333
@@ -57,15 +57,15 @@ flowchart LR
     style DB fill:#0C447C,color:#fff,stroke:#333
 ```
 
-This service is **intentionally independent** from the Backoffice, as required by the project. It shares no database connection or codebase with it — only the Product MCP Server tools, and (soon) read-only access to the Backoffice's stock data.
+This service is **intentionally independent** from the Backoffice, as required by the project. It shares no application code with it — it only consumes the Product MCP Server tools, and reads (read-only) the Backoffice's stock data directly from its SQLite database.
 
 ---
 
-##  Request flow
+## Request flow
 
 ```mermaid
 sequenceDiagram
-    actor U as 🧑 User
+    actor U as User
     participant C as Client Web
     participant AI as AI Query Service
     participant MCP as Product MCP Server
@@ -79,12 +79,12 @@ sequenceDiagram
     API-->>MCP: product data
     MCP-->>AI: clean product info
     AI-->>C: "Available in Lille (5) and Paris (2)"
-    C-->>U: 💬 displays answer
+    C-->>U: displays answer
 ```
 
 ---
 
-##  Technical decisions & justifications
+## Technical decisions & justifications
 
 <details>
 <summary><b>1. Why REST instead of WebSockets</b></summary>
@@ -116,11 +116,7 @@ Rather than calling the external Product API directly, we built a dedicated MCP 
 <summary><b>3. How the agent accesses stock information</b></summary>
 <br/>
 
-**Current implementation:** temporary in-memory data (`FAKE_STOCK` in `main.py`).
-
-**Why temporary:** the Backoffice database wasn't available with real data yet when this service was built. Rather than blocking progress, we simulated the expected data shape so the question-answering logic could be built and tested independently.
-
-**Planned final implementation:** once the Backoffice database is ready, this service will query it directly (read-only) for stock quantities per branch and product, using `product_id` (matching the external API's `sku`) as the join key.
+This service queries the Backoffice's SQLite database directly (read-only), joining the `stock` and `branches` tables to return quantities per branch for a given `product_id`. This keeps a clear separation of concerns: the Backoffice owns and writes stock data (via its own models), while this service only reads it to answer questions.
 </details>
 
 <details>
@@ -143,18 +139,18 @@ The current implementation looks for a product code pattern (`HB-...`) and keywo
 
 ---
 
-##  Supported questions
+## Supported questions
 
 | Type | Example | Status |
 |---|---|---|
-| Product details | *"give me the details for product HB-LAP-1001"* | ✅ |
-| Stock availability | *"where can I find product HB-LAP-1001"* | ✅ |
-| Product listing | *"what products are available?"* | ✅ |
-| Shopping list (multi-product) | *"I want 3 units of X and 2 of Y, which branch?"* | 🔜 planned |
+| Product details | *"give me the details for product HB-LAP-1001"* | Done |
+| Stock availability | *"where can I find product HB-LAP-1001"* | Done |
+| Product listing | *"what products are available?"* | Done |
+| Shopping list (multi-product) | *"I want 3 units of X and 2 of Y, which branch?"* | Done |
 
 ---
 
-##  Getting started
+## Getting started
 
 ### 1. Install dependencies
 ```bash
@@ -167,15 +163,18 @@ pip install -r requirements.txt
 ### 2. Make sure the Product API and MCP server are reachable
 See [`product_mcp_server/README.md`](../product_mcp_server/README.md).
 
-### 3. Run the service
+### 3. Make sure the Backoffice database is initialized
+This service reads directly from the Backoffice's SQLite database. See [`backoffice/README.md`](../backoffice/README.md) to initialize it with sample data.
+
+### 4. Run the service
 ```bash
 uvicorn main:app --reload --port 8000
 ```
-➡️ Available at `http://localhost:8000`
+Available at `http://localhost:8000`
 
 ---
 
-##  API reference
+## API reference
 
 ### `POST /ask`
 
@@ -205,13 +204,12 @@ CORS is enabled (`allow_origins=["*"]`) so the Client Web Interface — opened a
 
 ---
 
-##  Current limitations
+## Current limitations
 
 | Limitation | Plan |
 |---|---|
-| Stock data is simulated (`FAKE_STOCK`) | Replace with real Backoffice DB query |
 | Keyword-based question matching | Consider a language-understanding layer if time allows |
-| No multi-product shopping list support | Next planned feature |
+| No conversation history | Not required by the project; possible future improvement |
 
 ---
 
