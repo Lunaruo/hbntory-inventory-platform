@@ -1,126 +1,158 @@
-Minimum Viable Product (MVP)
-Objective
+# Minimum Viable Product (MVP)
+
+<p align="center">
+  <img src="https://img.shields.io/badge/scope-mandatory%20first-blue" alt="scope">
+  <img src="https://img.shields.io/badge/status-in%20progress-yellow" alt="status">
+</p>
+
+## Objective
 
 The objective of our Minimum Viable Product (MVP) is to implement all mandatory project requirements while keeping the system as simple, maintainable, and easy to integrate as possible.
 
-The MVP focuses on delivering a complete functional workflow rather than advanced features or user interface improvements.
+The MVP focuses on delivering a **complete functional workflow** rather than advanced features or user interface improvements.
 
-Features to Implement First
+---
 
-The following features are considered essential and will be implemented first.
+## Scope by Component
 
-Backoffice
-User authentication.
-Secure password storage using password hashing.
-Role-based authorization (Admin and Common User).
-Administrator account (admin).
-User management:
-Create users.
-Modify users.
-Soft-delete users.
-Change passwords.
-Assign users to branches.
-Branch management.
-Stock management:
-Add stock.
-Remove stock.
-View stock.
-Prevent negative stock quantities.
-Database
+### Backoffice
 
-The relational database will store:
+| Feature | Included in MVP |
+|---|---|
+| User authentication | Yes |
+| Secure password storage (hashing) | Yes |
+| Role-based authorization (Admin / Common User) | Yes |
+| Administrator account (`admin`) | Yes |
+| Create / modify / soft-delete users | Yes |
+| Change user passwords | Yes |
+| Assign users to branches | Yes |
+| Branch management | Yes |
+| Add / remove / view stock | Yes |
+| Prevent negative stock quantities | Yes |
 
-Users
-Password hashes
-User roles
-Branches
-Stock quantities
-Product identifiers
+### Database
 
-The database will not store product information provided by the external Product API.
+The relational database stores:
 
-Product Integration
-Connect to the external Product API.
-Retrieve product lists.
-Retrieve product details.
-Use product identifiers to associate stock with products.
-Product MCP Server
+- Users
+- Password hashes
+- User roles
+- Branches
+- Stock quantities
+- Product identifiers
 
-Implement an MCP server exposing two tools:
+It does **not** store product information provided by the external Product API.
 
-list_products
-get_product_details
+### Product Integration
 
-The MCP server will communicate with the external Product API on behalf of the AI service.
+| Feature | Included in MVP |
+|---|---|
+| Connect to the external Product API | Yes |
+| Retrieve product lists | Yes |
+| Retrieve product details | Yes |
+| Use product identifiers to link stock to products | Yes |
 
-AI Query Service
+### Product MCP Server
 
-Implement one AI agent capable of:
+An MCP server exposing two tools:
 
-Receiving a natural language question.
-Requesting product information through the Product MCP Server.
-Requesting stock information from the database.
-Generating a clear response.
-Returning a message when requested information is unavailable instead of inventing an answer.
-Client Web Interface
+- `list_products`
+- `get_product_details`
 
-Implement a simple public web page containing:
+The MCP server communicates with the external Product API on behalf of the AI service.
 
-A text input field.
-A submit button.
-A response area.
+### AI Query Service
 
-Users will be able to ask questions about products and stock without authentication.
+One AI agent capable of:
 
-Features Deferred Until Later
+- Receiving a natural-language question.
+- Requesting product information through the Product MCP Server.
+- Requesting stock information from the database.
+- Generating a clear response.
+- Returning a message when requested information is unavailable, instead of inventing an answer.
 
-The following features are not required for the MVP and will only be implemented after all mandatory functionality works correctly.
+### Client Web Interface
 
-Improved user interface design.
-Advanced search filters.
-Product images.
-Better formatting of AI responses.
-Loading animations.
-Input suggestions.
-Better error pages.
-Optional Features (If Time Allows)
+A simple public web page containing:
 
-If sufficient development time remains, we may implement:
+- A text input field.
+- A submit button.
+- A response area.
 
-Multiple specialized AI agents.
-Conversation history.
-Response streaming using WebSockets.
-Dockerized deployment of all services.
-Dashboard with stock statistics.
-Search history.
-Logging and monitoring.
-Automated tests.
-Advanced AI reasoning for multi-product purchase recommendations.
-Development Priorities
+Users can ask questions about products and stock **without authentication**.
 
-Our implementation order will be:
+---
 
-Create the database schema.
-Implement user authentication.
-Develop the Backoffice.
-Connect to the Product API.
-Implement the Product MCP Server.
-Develop the AI Query Service.
-Build the Client Web Interface.
-Integrate all services.
-Improve usability and add optional features if time permits.
-MVP Summary
+## Development Priorities
 
-Our MVP delivers all mandatory project requirements:
+```mermaid
+flowchart LR
+    A["1. Database schema"] --> B["2. Authentication"]
+    B --> C["3. Backoffice"]
+    C --> D["4. Product API connection"]
+    D --> E["5. Product MCP Server"]
+    E --> F["6. AI Query Service"]
+    F --> G["7. Client Web Interface"]
+    G --> H["8. Integration"]
+    H --> I["9. Usability & optional features"]
 
-Authenticated Backoffice
-User and branch management
-Stock management
-External Product API integration
-Product MCP Server
-AI-powered query service
-Public client interface
-Secure authentication
-Role-based authorization
+    style A fill:#0C447C,color:#fff,stroke:#333
+    style B fill:#0C447C,color:#fff,stroke:#333
+    style C fill:#0C447C,color:#fff,stroke:#333
+    style D fill:#7B2FF7,color:#fff,stroke:#333
+    style E fill:#7B2FF7,color:#fff,stroke:#333
+    style F fill:#7B2FF7,color:#fff,stroke:#333
+    style G fill:#F3217C,color:#fff,stroke:#333
+    style H fill:#888,color:#fff,stroke:#333
+    style I fill:#444,color:#fff,stroke:#333
+```
+
+---
+
+## Features Deferred Until Later
+
+Not required for the MVP — implemented only after all mandatory functionality works correctly:
+
+- Improved user interface design
+- Advanced search filters
+- Product images
+- Better formatting of AI responses
+- Loading animations
+- Input suggestions
+- Better error pages
+
+## Optional Features (If Time Allows)
+
+| Feature | Priority |
+|---|---|
+| Multiple specialized AI agents | Nice to have |
+| Conversation history | Nice to have |
+| Response streaming (WebSockets) | Nice to have |
+| Dockerized deployment of all services | Nice to have |
+| Dashboard with stock statistics | Nice to have |
+| Search history | Nice to have |
+| Logging and monitoring | Nice to have |
+| Automated tests | Nice to have |
+| Advanced AI reasoning for multi-product recommendations | Nice to have |
+
+---
+
+## MVP Summary
+
+Our MVP delivers **all mandatory project requirements**:
+
+- Authenticated Backoffice
+- User and branch management
+- Stock management
+- External Product API integration
+- Product MCP Server
+- AI-powered query service
+- Public client interface
+- Secure authentication
+- Role-based authorization
 
 Additional features will only be considered after the complete mandatory workflow is fully functional and integrated.
+
+---
+
+<p align="center"><i>Part of the HBntory Inventory Management Platform — Holberton School, Cohort C#29</i></p>
