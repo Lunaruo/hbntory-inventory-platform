@@ -10,6 +10,8 @@ from flask import (
     session,
 )
 
+from backoffice.services.auth_service import AuthService
+
 auth_bp = Blueprint(
     "auth",
     __name__,
@@ -26,17 +28,34 @@ def home():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    Display the login page.
 
-    The authentication logic will be added later.
-    """
     if request.method == "POST":
-        flash("Authentication not implemented yet.", "info")
-        return redirect(url_for("auth.login"))
+
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        user = AuthService.authenticate(
+            username,
+            password,
+        )
+
+        if user is None:
+            flash(
+                "Invalid username or password.",
+                "danger",
+            )
+            return redirect(url_for("auth.login"))
+
+        session["user_id"] = user.id
+        session["username"] = user.username
+        session["role"] = user.role
+
+        if user.role == "admin":
+            return redirect(url_for("auth.admin_dashboard"))
+
+        return redirect(url_for("auth.user_dashboard"))
 
     return render_template("login.html")
-
 
 @auth_bp.route("/logout")
 def logout():
@@ -46,3 +65,14 @@ def logout():
     session.clear()
     flash("You have been logged out.", "success")
     return redirect(url_for("auth.login"))
+
+@auth_bp.route("/admin")
+def admin_dashboard():
+
+    return render_template("admin_dashboard.html")
+
+
+@auth_bp.route("/dashboard")
+def user_dashboard():
+
+    return render_template("user_dashboard.html")
