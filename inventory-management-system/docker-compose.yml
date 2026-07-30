@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+
+  product_mcp_server:
+    build:
+      context: ./product_mcp_server
+    container_name: hbntory-product-mcp-server
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    networks:
+      - hbntory-network
+
+  ai_service:
+    build:
+      context: ./ai_service
+    container_name: hbntory-ai-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      - product_mcp_server
+    volumes:
+      - ./inventory.db:/app/inventory.db
+    restart: unless-stopped
+    networks:
+      - hbntory-network
+
+  backoffice:
+    build:
+      context: ./backoffice
+    container_name: hbntory-backoffice
+    ports:
+      - "5050:5000"
+    volumes:
+      - ./inventory.db:/app/inventory.db
+    restart: unless-stopped
+    networks:
+      - hbntory-network
+
+  client_web:
+    build:
+      context: ./client_web
+    container_name: hbntory-client-web
+    ports:
+      - "8080:80"
+    depends_on:
+      - ai_service
+    restart: unless-stopped
+    networks:
+      - hbntory-network
+
+networks:
+  hbntory-network:
+    driver: bridge
