@@ -90,7 +90,7 @@ def ask(payload: Question):
     product_code = product_codes[0] if product_codes else None
 
     # "list all products" question — no product code needed
-    if not product_code and ("quels produits" in question or "liste des produits" in question or "produits disponibles" in question):
+    if not product_code or ("quels produits" in question or "liste des produits" in question or "produits disponibles" in question):
         result = list_products()
         if result["success"]:
             names = ", ".join(p["name"] for p in result["products"][:10])
