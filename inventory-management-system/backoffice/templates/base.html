@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}HBntory Backoffice{% endblock %}</title>
+</head>
+
+<body>
+
+    <header>
+
+        <h1>HBntory Backoffice</h1>
+
+        {% if session.get("user_id") %}
+
+            <p>
+                Connected as
+                <strong>{{ session["username"] }}</strong>
+                ({{ session["role"] }})
+            </p>
+
+            <nav>
+
+                {% if session["role"] == "admin" %}
+
+                    <a href="{{ url_for('auth.admin_dashboard') }}">
+                        Dashboard
+                    </a>
+
+                {% else %}
+
+                    <a href="{{ url_for('auth.user_dashboard') }}">
+                        Dashboard
+                    </a>
+
+                {% endif %}
+
+                |
+
+                <a href="{{ url_for('auth.logout') }}">
+                    Logout
+                </a>
+
+            </nav>
+
+        {% endif %}
+
+        <hr>
+
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+
+            {% for category, message in messages %}
+
+                <div style="
+                    padding:10px;
+                    margin-bottom:10px;
+                    border:1px solid #999;
+                    background:#eeeeee;
+                ">
+                    {{ message }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}
+    {% endblock %}
+
+</body>
+
+</html>

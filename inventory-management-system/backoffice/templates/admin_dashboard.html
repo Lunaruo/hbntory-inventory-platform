@@ -1,16 +1,48 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Dashboard</title>
-</head>
+{% extends "base.html" %}
 
-<body>
+{% block title %}
+Admin Dashboard
+{% endblock %}
 
-<h1>Welcome Admin!</h1>
+{% block content %}
 
-<p>You are logged in as administrator.</p>
+<h2>Administrator Dashboard</h2>
 
-<a href="/logout">Logout</a>
+<p>
+    Welcome,
+    <strong>{{ session["username"] }}</strong>.
+</p>
 
-</body>
-</html>
+<p>
+    You are logged in as an administrator.
+</p>
+
+<hr>
+
+<h3>Administration</h3>
+
+<ul>
+
+    <li>
+        Manage users
+        <small>(Coming soon)</small>
+    </li>
+
+    <li>
+        Create users
+        <small>(Coming soon)</small>
+    </li>
+
+    <li>
+        Edit users
+        <small>(Coming soon)</small>
+    </li>
+
+    <li>
+        Delete users
+        <small>(Coming soon)</small>
+    </li>
+
+</ul>
+
+{% endblock %}
