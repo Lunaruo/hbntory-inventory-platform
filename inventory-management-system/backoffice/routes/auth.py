@@ -11,6 +11,10 @@ from flask import (
 )
 
 from backoffice.services.auth_service import AuthService
+from backoffice.utils.decorators import (
+    login_required,
+    admin_required,
+)
 
 auth_bp = Blueprint(
     "auth",
@@ -28,6 +32,9 @@ def home():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    Display the login page and authenticate users.
+    """
 
     if request.method == "POST":
 
@@ -57,22 +64,43 @@ def login():
 
     return render_template("login.html")
 
+
 @auth_bp.route("/logout")
+@login_required
 def logout():
     """
     Log out the current user.
     """
+
     session.clear()
-    flash("You have been logged out.", "success")
+
+    flash(
+        "You have been logged out.",
+        "success",
+    )
+
     return redirect(url_for("auth.login"))
 
-@auth_bp.route("/admin")
-def admin_dashboard():
 
-    return render_template("admin_dashboard.html")
+@auth_bp.route("/admin")
+@admin_required
+def admin_dashboard():
+    """
+    Administrator dashboard.
+    """
+
+    return render_template(
+        "admin_dashboard.html"
+    )
 
 
 @auth_bp.route("/dashboard")
+@login_required
 def user_dashboard():
+    """
+    Common user dashboard.
+    """
 
-    return render_template("user_dashboard.html")
+    return render_template(
+        "user_dashboard.html"
+    )
