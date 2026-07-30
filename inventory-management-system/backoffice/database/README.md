@@ -1,186 +1,136 @@
-# Backoffice — HBntory
+# Database — HBntory Backoffice
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-active-brightgreen" alt="status">
-  <img src="https://img.shields.io/badge/Flask-000000?logo=flask&logoColor=white" alt="flask">
-  <img src="https://img.shields.io/badge/python-3.11+-yellow?logo=python" alt="python">
-  <img src="https://img.shields.io/badge/SQLAlchemy-ORM-red" alt="sqlalchemy">
-  <img src="https://img.shields.io/badge/Auth-session%20based-orange" alt="auth">
+  <img src="https://img.shields.io/badge/SQLAlchemy-2.0-red" alt="sqlalchemy">
+  <img src="https://img.shields.io/badge/SQLite-local-blue?logo=sqlite&logoColor=white" alt="sqlite">
 </p>
 
 <p align="center">
-  <i>The employee-facing application for HBntory — authentication, user management,<br/>
-  branch management, and stock operations, all behind a role-based access control.</i>
+  <i>Database engine setup and initialization for the HBntory Backoffice —<br/>
+  creates the schema and seeds it with sample data for local development.</i>
 </p>
 
 ---
 
 ## Table of contents
 
-- [What this service does](#what-this-service-does)
-- [Architecture](#architecture)
-- [Roles & permissions](#roles--permissions)
-- [Technical decisions & justifications](#technical-decisions--justifications)
-- [Project structure](#project-structure)
+- [What this module does](#what-this-module-does)
+- [Files](#files)
+- [How it works](#how-it-works)
 - [Getting started](#getting-started)
-- [Routes reference](#routes-reference)
+- [Seeded data](#seeded-data)
+- [Technical decisions & justifications](#technical-decisions--justifications)
 - [Current limitations](#current-limitations)
 
 ---
 
-## What this service does
+## What this module does
 
-The Backoffice is the internal web application used only by authenticated employees to manage users, branches, and stock.
+This module owns everything related to connecting to and initializing the Backoffice's local relational database.
 
 | It does | It does NOT |
 |---|---|
-| Authenticate employees via session-based login | Store product information locally |
-| Enforce role-based access (Admin / Common User) | Allow common users to touch other branches' stock |
-| Manage users, branches, and stock quantities | Allow admins to modify stock directly |
-| Hash and protect all passwords | Ever store passwords in plain text |
-| Prevent stock from going negative | Duplicate data already owned by the Product API |
+| Create the SQLAlchemy engine and session factory | Store product names, prices, or descriptions |
+| Create all tables from the SQLAlchemy models | Modify data outside the three core tables |
+| Seed the database with sample branches, an admin user, and stock | Run automatically in production |
+| Guard against re-seeding an already-initialized database | Validate data against the external Product API |
 
 ---
 
-## Architecture
+## Files
+
+| File | Purpose |
+|---|---|
+| `database.py` | Defines `DATABASE_URL`, the SQLAlchemy `engine`, the `SessionLocal` session factory, and `init_db()` to create all tables. |
+| `init_db.py` | Runs `init_db()` and calls `seed_database()` to populate the database with sample branches, an admin account, and stock entries — skips seeding if data already exists. |
+
+---
+
+## How it works
 
 ```mermaid
 flowchart LR
-    Employee["Employee"] -->|"Login"| Auth["Auth /<br/>Session"]
-    Auth --> Routes["Routes<br/>(users, branches, stock)"]
-    Routes --> Services["Services layer"]
-    Services --> DB[("Relational<br/>Database")]
-    Services -->|"product lookups"| API["External<br/>Product API"]
+    Start["python3 -m backoffice.database.init_db"] --> InitDB["init_db()"]
+    InitDB -->|"creates tables"| Engine["SQLAlchemy engine<br/>(SQLite)"]
+    Start --> Seed["seed_database()"]
+    Seed -->|"check"| Guard{"Users table<br/>already populated?"}
+    Guard -->|"yes"| Skip["Skip seeding"]
+    Guard -->|"no"| Populate["Insert branches,<br/>admin user, stock"]
 
-    style Employee fill:#444,color:#fff,stroke:#333
-    style Auth fill:#F3217C,color:#fff,stroke:#333
-    style Routes fill:#7B2FF7,color:#fff,stroke:#333
-    style Services fill:#7B2FF7,color:#fff,stroke:#333
-    style DB fill:#0C447C,color:#fff,stroke:#333
-    style API fill:#888,color:#fff,stroke:#333
+    style Start fill:#7B2FF7,color:#fff,stroke:#333
+    style InitDB fill:#0C447C,color:#fff,stroke:#333
+    style Seed fill:#0C447C,color:#fff,stroke:#333
+    style Engine fill:#888,color:#fff,stroke:#333
 ```
 
-The Backoffice never stores product names, prices, or descriptions — it only keeps the external `product_id` alongside stock quantities, and looks up product details from the external Product API when needed.
+`init_db()` creates the database file and all tables (`branches`, `users`, `stock`) based on the SQLAlchemy models in `../models/`. `seed_database()` then inserts sample data — but only if the `users` table is empty, so running the script again is always safe and never duplicates data.
 
 ---
 
-## Roles & permissions
+## Getting started
 
-| Action | Admin | Common User |
-|---|---|---|
-| Log in / log out | Yes | Yes |
-| Create / modify / soft-delete users | Yes | No |
-| Change passwords | Yes | Own password only |
-| Assign users to branches | Yes | No |
-| Manage branches | Yes | No |
-| Add / remove stock | No | Own branch only |
-| View stock | Yes (all branches) | Own branch only |
+Run from the `inventory-management-system/` directory (not from inside `backoffice/`), so the `backoffice` package can be resolved correctly:
 
-Authorization is enforced server-side on every route — not just hidden in the UI — since a user could otherwise send a request directly and bypass a hidden button.
+```bash
+cd inventory-management-system
+python3 -m backoffice.database.init_db
+```
+
+This creates `inventory.db` at the root of `inventory-management-system/`.
+
+To start over with a clean database:
+```bash
+rm inventory-management-system/inventory.db
+python3 -m backoffice.database.init_db
+```
+
+---
+
+## Seeded data
+
+Running the script creates:
+
+| Branch | Sample stock (product_id, quantity) |
+|---|---|
+| Paris | HB-LAP-1001 (15), HB-KBD-3001 (10), HB-MSE-4001 (20), HB-USB-5001 (35), HB-WEB-7001 (8) |
+| Lille | HB-LAP-1001 (6), HB-LAP-1002 (7), HB-MON-2001 (12), HB-HDP-8001 (18), HB-CAM-9001 (6), HB-CHA-10001 (14), HB-USB-5001 (18) |
+
+Plus one admin account (`admin` / hashed password, no branch assignment).
 
 ---
 
 ## Technical decisions & justifications
 
 <details>
-<summary><b>1. Session-based authentication (not token/JWT)</b></summary>
+<summary><b>1. SQLite as the database engine</b></summary>
 <br/>
 
-**Justification:** the Backoffice is a traditional server-rendered web application (Flask + Jinja templates), where the browser and server maintain a stateful relationship page after page. A session cookie fits this pattern naturally, without the added complexity of issuing, storing, and refreshing tokens on the client side.
-
-**Trade-off accepted:** less convenient for a fully decoupled API client (e.g. a mobile app), but the Backoffice has no such requirement.
+**Justification:** SQLite requires no separate server process, making local development and testing simple — a single file (`inventory.db`) holds the entire database. This fits the project's scope, where the database only needs to store a small set of local records (users, branches, stock).
 </details>
 
 <details>
-<summary><b>2. Passwords hashed with Werkzeug security</b></summary>
+<summary><b>2. Seeding guarded by a check on the Users table</b></summary>
 <br/>
 
-**Justification:** passwords are never stored or compared in plain text. `generate_password_hash` / `check_password_hash` from Werkzeug provide a standard, well-tested hashing scheme (scrypt) without needing an extra dependency, since Flask already depends on Werkzeug.
+**Justification:** checking `if session.query(User).first()` before seeding prevents duplicate branches, users, or stock entries if the script is run more than once — for example after a fresh `git pull` or when a teammate re-runs setup instructions.
 </details>
 
 <details>
-<summary><b>3. Product information is never duplicated locally</b></summary>
+<summary><b>3. product_id stored as a string</b></summary>
 <br/>
 
-**Justification:** only the external `product_id` (a string, matching the Product API's `sku`) is stored alongside stock entries. Product names, prices, and descriptions are always fetched live from the external Product API when needed, keeping the Product API as the single source of truth and avoiding data drift between the two systems.
+**Justification:** the external Product API identifies products with alphanumeric SKUs (e.g. `HB-LAP-1001`), not numeric IDs — the `product_id` column matches this format so stock entries can be reliably linked to real products.
 </details>
-
-<details>
-<summary><b>4. Soft-delete for users, never permanent deletion</b></summary>
-<br/>
-
-**Justification:** deactivating a user (`is_active = False`) instead of deleting their row preserves historical stock movement records tied to that user, and allows reactivation later without recreating the account.
-</details>
-
----
-
-## Project structure
-
-```
-backoffice/
-├── app/            # Flask application factory and configuration
-├── database/       # Engine setup and database initialization (init_db, seed data)
-├── models/         # SQLAlchemy models: User, Branch, Stock
-├── routes/         # Route blueprints (auth, users, branches, stock)
-├── services/       # Business logic layer (e.g. product lookups via the Product API)
-├── templates/      # Jinja2 HTML templates (login, dashboards, forms)
-├── Dockerfile
-├── requirements.txt
-└── README.md
-```
-
----
-
-## Getting started
-
-### 1. Install dependencies
-```bash
-cd inventory-management-system/backoffice
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Initialize the database
-```bash
-cd ..
-python3 -m backoffice.database.init_db
-```
-This creates `inventory.db` with the schema, branches, an admin account, and sample stock data.
-
-### 3. Run the application
-```bash
-cd backoffice
-flask --app app run --debug
-```
-
----
-
-## Routes reference
-
-| Route | Method | Access | Description |
-|---|---|---|---|
-| `/login` | GET, POST | Public | Log in with username and password |
-| `/logout` | POST | Authenticated | End the current session |
-| `/users` | GET | Admin | List all users |
-| `/users` | POST | Admin | Create a new user |
-| `/users/<id>` | PUT | Admin | Modify a user |
-| `/users/<id>` | DELETE | Admin | Soft-delete a user |
-| `/branches` | GET, POST | Admin | List / create branches |
-| `/stock` | GET | All roles | View stock (own branch for Common Users) |
-| `/stock` | POST | Common User | Add or remove stock for their branch |
-
-*(Exact route paths may differ slightly — see `routes/` for the source of truth.)*
 
 ---
 
 ## Current limitations
 
-| Limitation | Plan |
+| Limitation | Note |
 |---|---|
-| No automated tests yet | Optional feature, time permitting |
-| No password reset flow | Not required by the project scope |
-| No audit log of stock changes | Optional feature, time permitting |
+| Some seeded `product_id` values do not exist in the external Product API | Sample data was created independently from the API catalog; only a subset of product IDs currently match both sources |
+| No migration system (e.g. Alembic) | Schema changes currently require dropping and recreating the database |
 
 ---
 
