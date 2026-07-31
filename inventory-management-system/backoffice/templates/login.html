@@ -1,52 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>HBntory Login</title>
-</head>
+{% extends "base.html" %}
 
-<body>
+{% block title %}
+Login
+{% endblock %}
 
-    <h1>HBntory Backoffice</h1>
+{% block content %}
 
-    <h2>Login</h2>
+<h2>Login</h2>
 
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <p style="color: red;">
-                    {{ message }}
-                </p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+<form method="POST">
 
-    <form method="POST">
+    <label>Username</label>
+    <br>
 
-        <label>Username</label><br>
-        <input
-            type="text"
-            name="username"
-            required
-        >
+    <input
+        type="text"
+        name="username"
+        required
+    >
 
-        <br><br>
+    <br><br>
 
-        <label>Password</label><br>
-        <input
-            type="password"
-            name="password"
-            required
-        >
+    <label>Password</label>
+    <br>
 
-        <br><br>
+    <input
+        type="password"
+        name="password"
+        required
+    >
 
-        <button type="submit">
-            Login
-        </button>
+    <br><br>
 
-    </form>
+    <button type="submit">
+        Login
+    </button>
 
-</body>
-</html>
+</form>
+
+{% endblock %}
