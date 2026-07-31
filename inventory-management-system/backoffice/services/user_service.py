@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from werkzeug.security import generate_password_hash
+from sqlalchemy.orm import joinedload
 
 from backoffice.database.database import SessionLocal
 from backoffice.models.user import User
@@ -15,7 +16,11 @@ class UserService:
     def list_users():
         session = SessionLocal()
         try:
-            return session.query(User).all()
+            return (
+                session.query(User)
+                .options(joinedload(User.branch))
+                .all()
+            )
         finally:
             session.close()
 
@@ -23,7 +28,12 @@ class UserService:
     def get_user(user_id: int):
         session = SessionLocal()
         try:
-            return session.query(User).filter(User.id == user_id).first()
+            return (
+                session.query(User)
+                .options(joinedload(User.branch))
+                .filter(User.id == user_id)
+                .first()
+            )
         finally:
             session.close()
 
@@ -113,4 +123,3 @@ class UserService:
             return True, None
         finally:
             session.close()
-            

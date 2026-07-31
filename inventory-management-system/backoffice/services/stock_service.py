@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from sqlalchemy.orm import joinedload
+
 from backoffice.database.database import SessionLocal
 from backoffice.models.stock import Stock
 
@@ -15,6 +17,7 @@ class StockService:
         try:
             return (
                 session.query(Stock)
+                .options(joinedload(Stock.branch))
                 .filter(Stock.branch_id == branch_id)
                 .all()
             )
@@ -25,7 +28,11 @@ class StockService:
     def list_all_stock():
         session = SessionLocal()
         try:
-            return session.query(Stock).all()
+            return (
+                session.query(Stock)
+                .options(joinedload(Stock.branch))
+                .all()
+            )
         finally:
             session.close()
 
