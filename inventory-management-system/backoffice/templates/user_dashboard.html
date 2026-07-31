@@ -1,16 +1,43 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>User Dashboard</title>
-</head>
+{% extends "base.html" %}
 
-<body>
+{% block title %}
+User Dashboard
+{% endblock %}
 
-<h1>Welcome!</h1>
+{% block content %}
 
-<p>You are logged in.</p>
+<h2>User Dashboard</h2>
 
-<a href="/logout">Logout</a>
+<p>
+    Welcome,
+    <strong>{{ session["username"] }}</strong>.
+</p>
 
-</body>
-</html>
+<p>
+    You are logged in as a common user.
+</p>
+
+<hr>
+
+<h3>Stock Management</h3>
+
+<ul>
+
+    <li>
+        View stock
+        <small>(Coming soon)</small>
+    </li>
+
+    <li>
+        Add stock
+        <small>(Coming soon)</small>
+    </li>
+
+    <li>
+        Remove stock
+        <small>(Coming soon)</small>
+    </li>
+
+</ul>
+
+{% endblock %}
