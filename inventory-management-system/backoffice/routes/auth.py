@@ -56,6 +56,7 @@ def login():
         session["user_id"] = user.id
         session["username"] = user.username
         session["role"] = user.role
+        session["branch_id"] = user.branch_id
 
         if user.role == "admin":
             return redirect(url_for("auth.admin_dashboard"))

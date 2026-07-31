@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}
+Stock
+{% endblock %}
+{% block content %}
+<h2>Stock</h2>
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Branch</th>
+        <th>Product ID</th>
+        <th>Quantity</th>
+    </tr>
+    {% for entry in stock_entries %}
+    <tr>
+        <td>{{ entry.branch.name if entry.branch else entry.branch_id }}</td>
+        <td>{{ entry.product_id }}</td>
+        <td>{{ entry.quantity }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% if session["role"] != "admin" %}
+<hr>
+<h3>Add stock</h3>
+<form method="POST" action="{{ url_for('stock.add_stock') }}">
+    <input type="text" name="product_id" placeholder="Product ID" required>
+    <input type="number" name="quantity" placeholder="Quantity" min="1" required>
+    <button type="submit">Add</button>
+</form>
+
+<h3>Remove stock</h3>
+<form method="POST" action="{{ url_for('stock.remove_stock') }}">
+    <input type="text" name="product_id" placeholder="Product ID" required>
+    <input type="number" name="quantity" placeholder="Quantity" min="1" required>
+    <button type="submit">Remove</button>
+</form>
+{% endif %}
+{% endblock %}

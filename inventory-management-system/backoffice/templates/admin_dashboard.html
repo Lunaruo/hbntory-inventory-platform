@@ -1,48 +1,24 @@
 {% extends "base.html" %}
-
 {% block title %}
 Admin Dashboard
 {% endblock %}
-
 {% block content %}
-
 <h2>Administrator Dashboard</h2>
-
 <p>
     Welcome,
     <strong>{{ session["username"] }}</strong>.
 </p>
-
 <p>
     You are logged in as an administrator.
 </p>
-
 <hr>
-
 <h3>Administration</h3>
-
 <ul>
-
     <li>
-        Manage users
-        <small>(Coming soon)</small>
+        <a href="{{ url_for('users.list_users') }}">Manage users</a>
     </li>
-
     <li>
-        Create users
-        <small>(Coming soon)</small>
+        <a href="{{ url_for('stock.view_stock') }}">View stock (all branches)</a>
     </li>
-
-    <li>
-        Edit users
-        <small>(Coming soon)</small>
-    </li>
-
-    <li>
-        Delete users
-        <small>(Coming soon)</small>
-    </li>
-
 </ul>
-
 {% endblock %}

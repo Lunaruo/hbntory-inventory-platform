@@ -1,43 +1,21 @@
 {% extends "base.html" %}
-
 {% block title %}
 User Dashboard
 {% endblock %}
-
 {% block content %}
-
 <h2>User Dashboard</h2>
-
 <p>
     Welcome,
     <strong>{{ session["username"] }}</strong>.
 </p>
-
 <p>
     You are logged in as a common user.
 </p>
-
 <hr>
-
 <h3>Stock Management</h3>
-
 <ul>
-
     <li>
-        View stock
-        <small>(Coming soon)</small>
+        <a href="{{ url_for('stock.view_stock') }}">View / add / remove stock</a>
     </li>
-
-    <li>
-        Add stock
-        <small>(Coming soon)</small>
-    </li>
-
-    <li>
-        Remove stock
-        <small>(Coming soon)</small>
-    </li>
-
 </ul>
-
 {% endblock %}
