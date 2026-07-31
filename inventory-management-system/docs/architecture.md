@@ -66,7 +66,14 @@ It is responsible for providing:
 - Product list
 - Product details
 
-The Product API is considered the single source of truth for all product information. Neither the Backoffice nor the AI service modify product data.
+**Concrete integration details (validated):**
+
+- Repository: `hbntory-products-api-main` (separate repo, run independently via `docker compose up --build` from its own directory).
+- Local access (host machine, e.g. for the Backoffice or manual testing): `http://localhost:5001`
+- Access from inside the HBntory Docker Compose network (e.g. from `product_mcp_server`): `http://external-products-api:5000` (service name `external-products-api`, internal port `5000`, per that repo's own `docker-compose.yml`).
+- Endpoints used: `GET /health`, `GET /api/v1/products`, `GET /api/v1/products/{id_or_sku}`.
+- Response shape confirmed: `{"count": <int>, "limit": <int>, "offset": <int>, "results": [...]}` for lists, and a flat product object (with a nested `supplier` object) for a single product.
+- Robustness testing supported via `?simulate_delay_ms=750` and `?force_error=true` query parameters — used to validate our timeout/error handling in `product_mcp_server/product_tools.py`.
 
 ### 4. Product MCP Server
 
