@@ -3,6 +3,8 @@
 from flask import Flask
 
 from backoffice.routes.auth import auth_bp
+from backoffice.routes.users import users_bp
+from backoffice.routes.stock import stock_bp
 
 
 def create_app():
@@ -19,5 +21,7 @@ def create_app():
     app.config["SECRET_KEY"] = "change_this_secret_key"
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(stock_bp)
 
     return app
