@@ -1,21 +1,20 @@
 """
 AI Query Service - HBntory Inventory Management Platform
-Receives natural language questions and answers using the Product MCP tools.
+A real AI agent: Ollama decides which tool to call (product info via
+a real MCP client, or stock via direct read-only DB access), then
+writes the final natural-language answer.
 """
+
+import os
+import re
+import json
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import sys
-import os
 
-sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..", "product_mcp_server")
-)
-sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..")
-)
-from product_tools import list_products, get_product_details
+import ollama
+from fastmcp import Client as MCPClient
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -36,15 +35,15 @@ class Question(BaseModel):
     question: str
 
 
-BACKOFFICE_DB_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "inventory.db"
-)
+_default_path = os.path.join(os.path.dirname(__file__), "..", "inventory.db")
+_same_dir_path = os.path.join(os.path.dirname(__file__), "inventory.db")
+BACKOFFICE_DB_PATH = _default_path if os.path.exists(_default_path) else _same_dir_path
+
 engine = create_engine(f"sqlite:///{BACKOFFICE_DB_PATH}")
 SessionLocal = sessionmaker(bind=engine)
 
 
 def get_stock_for_product(product_id: str) -> list:
-    """Read-only query: stock entries for a product across all branches."""
     session = SessionLocal()
     try:
         results = (
@@ -61,76 +60,211 @@ def get_stock_for_product(product_id: str) -> list:
         session.close()
 
 
+MCP_SERVER_URL = os.environ.get(
+    "MCP_SERVER_URL", "http://127.0.0.1:8001/mcp"
+)
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://host.docker.internal:11434")
+
+ollama_client = ollama.Client(host=OLLAMA_HOST)
+
+
+def extract_message(response):
+    """Handle both dict-style and object-style Ollama responses."""
+    if isinstance(response, dict):
+        return response["message"]
+    return response.message
+
+
+def get_message_content(message):
+    if isinstance(message, dict):
+        return message.get("content", "")
+    return getattr(message, "content", "") or ""
+
+
+def get_tool_calls(message):
+    if isinstance(message, dict):
+        return message.get("tool_calls")
+    return getattr(message, "tool_calls", None)
+
+
+def get_call_name(call):
+    if isinstance(call, dict):
+        return call["function"]["name"]
+    return call.function.name
+
+
+def get_call_arguments(call):
+    if isinstance(call, dict):
+        return call["function"]["arguments"]
+    args = call.function.arguments
+    return dict(args) if not isinstance(args, dict) else args
+
+
+async def call_mcp_tool(name: str, arguments: dict) -> dict:
+    async with MCPClient(MCP_SERVER_URL) as client:
+        result = await client.call_tool(name, arguments)
+        text = result.content[0].text
+        return json.loads(text)
+
+
+def get_stock_tool(product_id: str) -> dict:
+    stock = get_stock_for_product(product_id)
+    if not stock:
+        return {"success": False, "message": f"No stock found for {product_id}"}
+    return {"success": True, "product_id": product_id, "stock": stock}
+
+
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "list_products",
+            "description": "List available products from the external Product API.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Max products to return"}
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_product_details",
+            "description": "Get details (name, price, description) for a product given its product_id.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_id": {"type": "string", "description": "e.g. HB-LAP-1001"}
+                },
+                "required": ["product_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_stock",
+            "description": "Get stock availability (quantity per branch) for a product given its product_id.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_id": {"type": "string", "description": "e.g. HB-LAP-1001"}
+                },
+                "required": ["product_id"],
+            },
+        },
+    },
+]
+
+SYSTEM_PROMPT = (
+    "You are the HBntory shopping assistant. You MUST use the tools "
+    "provided to answer any question about a product's price, details, "
+    "or stock. If the question mentions 'stock', 'où trouver', 'disponible', "
+    "'trouver', always call get_stock with the product_id mentioned. "
+    "Product identifiers always look like HB-XXX-NNNN (e.g. HB-LAP-1001). "
+    "If the user names a product in plain language without giving a valid "
+    "product_id in that exact format, do NOT guess or suggest a category — "
+    "instead reply that you can only look up products by their exact "
+    "product_id, and ask the user to provide it. Never invent product "
+    "names, prices, categories, or stock quantities. Reply in French, "
+    "concisely, based only on tool results."
+)
+
+PRODUCT_ID_PATTERN = re.compile(r"HB-[A-Z]{2,4}-\d{3,5}", re.IGNORECASE)
+
+
+def looks_like_product_question(question: str) -> bool:
+    q = question.lower()
+    if PRODUCT_ID_PATTERN.search(question):
+        return True
+    keywords = ["produit", "produits", "liste", "disponible", "catalogue", "stock"]
+    return any(k in q for k in keywords)
+
+
+def is_empty_or_json_like(text: str) -> bool:
+    stripped = text.strip().strip(".").strip()
+    return not stripped or stripped in ("{}", "{ }", "{} {}", "{{}}")
+
+
+async def execute_tool_call(name: str, arguments: dict) -> dict:
+    if name == "list_products":
+        return await call_mcp_tool(
+            "list_products_tool", {"limit": arguments.get("limit", 20)}
+        )
+    if name == "get_product_details":
+        product_id = arguments.get("product_id")
+        if not product_id:
+            return {"success": False, "message": "Missing product_id"}
+        return await call_mcp_tool(
+            "get_product_details_tool", {"product_id": product_id}
+        )
+    if name == "get_stock":
+        product_id = arguments.get("product_id")
+        if not product_id:
+            return {"success": False, "message": "Missing product_id"}
+        return get_stock_tool(product_id)
+    return {"success": False, "message": f"Unknown tool: {name}"}
+
+
+async def run_agent(question: str) -> str:
+    if not looks_like_product_question(question):
+        return (
+            "Bonjour ! Je peux vous renseigner sur nos produits et leur "
+            "stock. Donnez-moi un code produit (ex: HB-LAP-1001) ou "
+            "demandez la liste des produits disponibles."
+        )
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": question},
+    ]
+
+    response = ollama_client.chat(model=OLLAMA_MODEL, messages=messages, tools=TOOLS)
+    message = extract_message(response)
+    tool_calls = get_tool_calls(message)
+
+    if not tool_calls:
+        answer = get_message_content(message).strip()
+        if is_empty_or_json_like(answer):
+            return (
+                "Bonjour ! Posez-moi une question sur un produit (donnez "
+                "son code, ex: HB-LAP-1001) ou son stock."
+            )
+        return answer
+
+    messages.append({
+        "role": "assistant",
+        "content": get_message_content(message),
+        "tool_calls": [
+            {"function": {"name": get_call_name(c), "arguments": get_call_arguments(c)}}
+            for c in tool_calls
+        ],
+    })
+
+    for call in tool_calls:
+        tool_name = get_call_name(call)
+        arguments = get_call_arguments(call)
+        result = await execute_tool_call(tool_name, arguments)
+        messages.append({"role": "tool", "content": json.dumps(result)})
+
+    final_response = ollama_client.chat(model=OLLAMA_MODEL, messages=messages, tools=TOOLS)
+    final_message = extract_message(final_response)
+    answer = get_message_content(final_message).strip()
+    if is_empty_or_json_like(answer):
+        return (
+            "Je n'ai pas bien compris votre question. Pouvez-vous préciser "
+            "un code produit (ex: HB-LAP-1001) ?"
+        )
+    return answer
+
+
 @app.post("/ask")
-def ask(payload: Question):
-    question = payload.question.lower()
-    words = payload.question.upper().split()
-
-    product_codes = [w for w in words if w.startswith("HB-")]
-
-    # Shopping list — several products mentioned at once
-    if len(product_codes) > 1:
-        results = []
-        for code in product_codes:
-            stock = get_stock_for_product(code)
-            if not stock:
-                results.append(f"{code} : information de stock introuvable")
-                continue
-            total = sum(s["quantity"] for s in stock)
-            if total > 0:
-                details = ", ".join(f"{s['branch']} ({s['quantity']} unités)" for s in stock)
-                results.append(f"{code} : disponible — {details}")
-            else:
-                results.append(f"{code} : rupture de stock partout")
-        return {
-            "success": True,
-            "answer": "Voici la disponibilité de votre liste d'achats :\n" + "\n".join(results),
-        }
-
-    product_code = product_codes[0] if product_codes else None
-
-    # "list all products" question — no product code needed
-    if not product_code or ("quels produits" in question or "liste des produits" in question or "produits disponibles" in question):
-        result = list_products()
-        if result["success"]:
-            names = ", ".join(p["name"] for p in result["products"][:10])
-            return {
-                "success": True,
-                "answer": f"Voici quelques produits disponibles : {names}.",
-            }
-        else:
-            return {"success": False, "answer": "Impossible de récupérer la liste des produits."}
-
-    if not product_code:
-        return {
-            "success": False,
-            "answer": "Je ne comprends pas encore ce type de question.",
-        }
-
-    # Stock question
-    if "stock" in question or "où" in question or "trouver" in question or "disponible" in question:
-        stock = get_stock_for_product(product_code)
-        if not stock:
-            return {
-                "success": False,
-                "answer": f"Aucune information de stock pour {product_code}.",
-            }
-        details = ", ".join(f"{s['branch']} ({s['quantity']} unités)" for s in stock)
-        return {
-            "success": True,
-            "answer": f"Le produit {product_code} est disponible : {details}.",
-        }
-
-    # Product details question (default)
-    result = get_product_details(product_code)
-    if result["success"]:
-        p = result["product"]
-        return {
-            "success": True,
-            "answer": f"Le produit {p['name']} est proposé à {p['unit_price']} {p['currency']}. {p['description']}",
-        }
-    else:
-        return {
-            "success": False,
-            "answer": "Je n'ai pas trouvé ce produit.",
-        }
+async def ask(payload: Question):
+    try:
+        answer = await run_agent(payload.question)
+        return {"success": True, "answer": answer}
+    except Exception as e:
+        return {"success": False, "answer": f"Une erreur est survenue: {str(e)}"}
