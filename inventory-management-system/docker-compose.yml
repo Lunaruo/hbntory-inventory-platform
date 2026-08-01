@@ -1,39 +1,41 @@
-version: "3.9"
-
 services:
 
   product_mcp_server:
     build:
       context: ./product_mcp_server
     container_name: hbntory-product-mcp-server
+    environment:
+      - PRODUCT_API_BASE_URL=http://host.docker.internal:5001
     ports:
       - "8001:8001"
     restart: unless-stopped
     networks:
       - hbntory-network
 
+  backoffice:
+    build:
+      context: .
+      dockerfile: backoffice/Dockerfile
+    container_name: hbntory-backoffice
+    ports:
+      - "5050:5000"
+    restart: unless-stopped
+    networks:
+      - hbntory-network
+
   ai_service:
     build:
-      context: ./ai_service
+      context: .
+      dockerfile: ai_service/Dockerfile
     container_name: hbntory-ai-service
     ports:
       - "8000:8000"
     depends_on:
       - product_mcp_server
-    volumes:
-      - ./inventory.db:/app/inventory.db
-    restart: unless-stopped
-    networks:
-      - hbntory-network
-
-  backoffice:
-    build:
-      context: ./backoffice
-    container_name: hbntory-backoffice
-    ports:
-      - "5050:5000"
-    volumes:
-      - ./inventory.db:/app/inventory.db
+    environment:
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - MCP_SERVER_URL=http://product_mcp_server:8001/mcp
+      - OLLAMA_MODEL=llama3.2:3b
     restart: unless-stopped
     networks:
       - hbntory-network
