@@ -59,9 +59,8 @@ def get_stock_for_product(product_id: str) -> list:
     finally:
         session.close()
 
-
 MCP_SERVER_URL = os.environ.get(
-    "MCP_SERVER_URL", "http://127.0.0.1:8001/mcp"
+    "MCP_SERVER_URL", "http://localhost:8001/mcp"
 )
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://host.docker.internal:11434")
@@ -160,23 +159,17 @@ TOOLS = [
 ]
 
 SYSTEM_PROMPT = (
-    "You are the HBntory inventory assistant. You have access to real tools "
-    "and must use them for any question about products or stock.\n\n"
-    "Rules:\n"
-    "- ALWAYS call the appropriate tool when the question is about a product, "
-    "its price, its description, or its stock.\n"
-    "- NEVER answer from your own knowledge or guess a value.\n"
-    "- NEVER invent a product name, price, category, or stock quantity.\n"
-    "- The tool results are the only source of truth.\n"
-    "- If a tool call fails or returns no result, say so honestly instead "
-    "of making something up.\n\n"
+    "You are the HBntory shopping assistant. You MUST use the tools "
+    "provided to answer any question about a product's price, details, "
+    "or stock. If the question mentions 'stock', 'où trouver', 'disponible', "
+    "'trouver', always call get_stock with the product_id mentioned. "
     "Product identifiers always look like HB-XXX-NNNN (e.g. HB-LAP-1001). "
     "If the user names a product in plain language without giving a valid "
-    "product_id in that exact format, do not guess which product they mean "
-    "— ask them to provide the exact code.\n\n"
-    "Reply in French, concisely, in plain text (not JSON or code), based "
-    "only on the tool's result."
-
+    "product_id in that exact format, do NOT guess or suggest a category — "
+    "instead reply that you can only look up products by their exact "
+    "product_id, and ask the user to provide it. Never invent product "
+    "names, prices, categories, or stock quantities. Reply in French, "
+    "concisely, based only on tool results."
 )
 
 PRODUCT_ID_PATTERN = re.compile(r"HB-[A-Z]{2,4}-\d{3,5}", re.IGNORECASE)
