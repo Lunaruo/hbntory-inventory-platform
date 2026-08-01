@@ -16,11 +16,11 @@ This document records the communication strategy decisions made for the HBntory 
 
 ## 2. AI Query Service <-> Product MCP Server
 
-**Decision:** direct MCP tool calls (`list_products`, `get_product_details`) over the Model Context Protocol.
+**Decision:** the AI agent (Ollama) decides autonomously whether to call `list_products_tool` or `get_product_details_tool`, via a real MCP client (`fastmcp.Client`) connecting to the Product MCP Server over HTTP (`streamable-http` transport).
 
-**Benefit:** matches the project requirement that the AI agent must access product information exclusively through an MCP server, not by calling the external Product API directly. This creates a clear separation of concerns: the MCP server handles all communication with the external API and its error cases (timeouts, connection failures, product not found), while the AI Query Service only interprets user questions and composes answers.
+**Benefit:** matches the project requirement that the AI agent must access product information exclusively through an MCP server, not by calling the external Product API directly — and goes further by having a genuine AI model decide when to use each tool, rather than hardcoded keyword matching. This creates a clear separation of concerns: the MCP server handles all communication with the external API and its error cases, the AI model decides intent, and the AI Query Service only orchestrates the exchange.
 
-**Trade-off:** adds one extra layer between the AI agent and the external API, compared to calling it directly. This is intentional and required by the project, not an unplanned cost.
+**Trade-off:** small local models can occasionally misformat a tool call response; this is mitigated with response format normalization and honest fallback messages rather than invented answers.
 
 ---
 
