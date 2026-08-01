@@ -3,9 +3,13 @@ Product MCP Server - HBntory Inventory Management Platform
 Bridges the AI agent to the external Product API (localhost:5001).
 """
 
+import os
+
 import httpx
 
-PRODUCT_API_BASE_URL = "http://localhost:5001"
+PRODUCT_API_BASE_URL = os.environ.get(
+    "PRODUCT_API_BASE_URL", "http://localhost:5001"
+)
 
 
 def list_products(limit: int = 20, offset: int = 0) -> dict:
