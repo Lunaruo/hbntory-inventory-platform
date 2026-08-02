@@ -88,6 +88,8 @@ Its responsibilities are:
 
 This layer makes it possible to replace or modify the Product API in the future without changing the AI system.
 
+The server runs as an independent HTTP service (`streamable-http` transport, port 8001), not as a script imported directly in Python — the AI Query Service connects to it as a genuine remote MCP client.
+
 ### 5. AI Query Service
 
 The AI Query Service processes natural-language questions coming from public users.
@@ -95,11 +97,11 @@ The AI Query Service processes natural-language questions coming from public use
 Its responsibilities are:
 
 - Receive user questions.
-- Determine which tools are required.
-- Query the Product MCP Server for product information.
-- Query stock information directly from the relational database (read-only).
-- Generate natural language answers.
-- Avoid inventing information when data is unavailable.
+- Send the question, along with a description of available tools, to a local AI agent (Ollama, model `llama3.2:3b`).
+- Let the agent decide which tool to call: product information via the Product MCP Server, or stock via a direct read-only database query.
+- Execute the tool the agent requests, and feed the result back to it.
+- Let the agent generate the final natural language answer based on the tool's result.
+- Avoid inventing information when data is unavailable — the agent is instructed to answer honestly if no valid tool result is found.
 
 The AI service is completely independent from the Backoffice codebase.
 
@@ -123,7 +125,8 @@ The interface only communicates with the AI Query Service.
 ```mermaid
 flowchart TB
     Client["Client Web Interface"] -->|"REST"| AIService["AI Query Service"]
-    AIService --> MCP["Product MCP Server"]
+    AIService -->|"tool calling"| Ollama["Ollama (llama3.2:3b)"]
+    AIService -->|"MCP client (HTTP)"| MCP["Product MCP Server"]
     AIService --> DB[("Relational Database")]
     MCP --> API["External Product API"]
 
@@ -133,6 +136,7 @@ flowchart TB
 
     style Client fill:#F3217C,color:#fff,stroke:#333
     style AIService fill:#7B2FF7,color:#fff,stroke:#333
+    style Ollama fill:#5C4EE5,color:#fff,stroke:#333
     style MCP fill:#7B2FF7,color:#fff,stroke:#333
     style API fill:#888,color:#fff,stroke:#333
     style DB fill:#0C447C,color:#fff,stroke:#333
@@ -151,18 +155,19 @@ sequenceDiagram
     actor U as User
     participant C as Client Web Interface
     participant AI as AI Query Service
+    participant O as Ollama
     participant MCP as Product MCP Server
     participant API as External Product API
     participant DB as Relational Database
 
     U->>C: "Where can I find product HB-LAP-1001?"
     C->>AI: POST /ask
-    AI->>MCP: get_product_details("HB-LAP-1001")
-    MCP->>API: GET /api/v1/products/HB-LAP-1001
-    API-->>MCP: product data
-    MCP-->>AI: product name, price, description
+    AI->>O: question + available tools
+    O-->>AI: decides to call get_stock(product_id)
     AI->>DB: query stock for product_id across branches
     DB-->>AI: branch quantities
+    AI->>O: tool result
+    O-->>AI: final natural language answer
     AI-->>C: "Available in Lille (6) and Paris (15)"
     C-->>U: displays answer
 ```
@@ -200,22 +205,22 @@ No product information is duplicated in the local database.
 
 ## AI Data Access
 
-The AI agent accesses information through dedicated tools, never by inventing data.
+The AI agent accesses information through dedicated tools, never by inventing data. The decision of which tool to call is made by the AI model itself (real tool calling via Ollama), not by hardcoded keyword matching.
 
 **For product information:**
 
-AI Agent → Product MCP Server → External Product API
+AI Agent -> Ollama (decides to call a tool) -> Real MCP client (fastmcp) -> Product MCP Server (HTTP) -> External Product API
 
 **For stock information:**
 
-AI Agent → Direct read-only database query → Relational Database
+AI Agent -> Ollama (decides to call a tool) -> Direct read-only database query -> Relational Database
 
 This design ensures that:
 
 - Product information always comes from the official Product API.
 - Stock information always comes from the local database.
-- The AI agent does not access external services directly.
-- The AI agent only uses controlled tools exposed by the MCP server, plus a read-only query path for stock.
+- The AI agent does not access external services directly — it always goes through a tool the model has decided to call.
+- The Product MCP Server runs as an independent HTTP service, connected to by a genuine remote MCP client, not imported as a Python module.
 
 ---
 
@@ -225,8 +230,8 @@ This architecture separates the application into independent services with clear
 
 - The **Backoffice** manages users and stock.
 - The **Product API** remains the only source of product information.
-- The **Product MCP Server** provides secure access to product data for the AI system.
-- The **AI Query Service** combines product information and stock information to answer user questions, and communicates with the Client Web Interface over REST.
+- The **Product MCP Server** provides secure access to product data for the AI system, running as an independent HTTP service.
+- The **AI Query Service** is a real AI agent (Ollama) that decides which tool to use, combines product information and stock information to answer user questions, and communicates with the Client Web Interface over REST.
 - The **Client Web Interface** offers a simple natural-language interface without requiring authentication.
 
 This modular design improves maintainability, scalability, and allows each component to evolve independently while respecting the project requirements.
