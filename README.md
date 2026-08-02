@@ -61,12 +61,12 @@ flowchart TB
 
 | Component | Owner | Responsibility |
 |---|---|---|
-| **Backoffice Service** | Léo | Authenticated internal app — user & branch management, stock operations |
-| **Relational Database** | Léo | Stores users, branches, stock quantities (never product details) |
+| **Backoffice Service** | Léo/Ouarda/Ulysse | Authenticated internal app — user & branch management, stock operations |
+| **Relational Database** | Léo/Ouarda/Ulysse | Stores users, branches, stock quantities (never product details) |
 | **External Product API** | Provided by school | Read-only product catalog (Docker container) |
-| **Product MCP Server** | Ouarda | Bridges the AI agent to the external Product API |
-| **AI Query Service** | Ouarda | Independent backend answering natural-language questions |
-| **Client Web Interface** | Ouarda/Léo | Public chat page, no authentication required |
+| **Product MCP Server** | Ouarda/Léo/Ulysse | Bridges the AI agent to the external Product API |
+| **AI Query Service** | Ouarda/Léo/Ulysse | Independent backend answering natural-language questions |
+| **Client Web Interface** | Ouarda/Léo/Ulysse | Public chat page, no authentication required |
 
 ---
 
@@ -173,7 +173,8 @@ inventory-management-system/
 | | |
 |---|---|
 | **Léo Lebtahi** | Backoffice — database, authentication, stock management, Client Web Interface|
-| **Ouarda Bouchema** | AI/MCP layer — Product MCP Server, AI Query Service, Client Web Interface |
+| **Ouarda Bouchema** | AI/MCP layer — Product MCP Server, AI Query Service (Ollama agent), Client Web Interface |
+| **Ulysse Dewaleyne** | Stock data, AI service support, bug fixes across the project |
 
 ---
 
